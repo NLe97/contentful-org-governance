@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/**/*.ts": { "runtime": "@vercel/node" }
+  },
+  "crons": [
+    { "path": "/api/cron/reconcile", "schedule": "0 5 * * *" }
+  ]
+}
