@@ -1,0 +1,32 @@
+# Brainstorming session artifacts
+.superpowers/
+
+# Node
+node_modules/
+.pnp.*
+
+# Vercel
+.vercel/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Build
+dist/
+.next/
+out/
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
