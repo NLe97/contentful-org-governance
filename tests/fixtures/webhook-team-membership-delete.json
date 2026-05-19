@@ -1,0 +1,3 @@
+{ "sys": { "id": "tsm123", "type": "TeamSpaceMembership",
+  "team": { "sys": { "id": "tOrgAdmins" } },
+  "space": { "sys": { "id": "sX" } } } }
