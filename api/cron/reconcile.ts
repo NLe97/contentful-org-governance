@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyCronToken } from "@/lib/auth/verify-cron-token";
-import { cmaForSpace } from "@/lib/cma/client";
-import { sweep } from "@/lib/fanout/sweep";
-import { ensureTeamAttached } from "@/lib/fanout/ensure-team-attached";
-import { readConfig } from "@/lib/content-model/governance-config";
-import { appendAudit } from "@/lib/content-model/audit-event";
+import { verifyCronToken } from "../../lib/auth/verify-cron-token";
+import { cmaForSpace } from "../../lib/cma/client";
+import { sweep } from "../../lib/fanout/sweep";
+import { ensureTeamAttached } from "../../lib/fanout/ensure-team-attached";
+import { readConfig } from "../../lib/content-model/governance-config";
+import { appendAudit } from "../../lib/content-model/audit-event";
 
 type Installation = { orgId: string; consoleSpaceId: string; installationId: string };
 
