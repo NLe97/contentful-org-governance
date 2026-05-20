@@ -25,10 +25,32 @@ type BootstrapBody = {
 async function ensureTeam(org: any, name: string, members: string[]): Promise<string> {
   const existing = (await org.getTeams()).items.find((t: any) => t.name === name);
   const team = existing ?? await org.createTeam({ name, description: "Auto-managed by Org Governance App" } as any);
+
+  // v11's createTeamMembership requires `organizationMembershipId`, not a raw
+  // user id. Look those up for the members we want to add.
+  const orgMemberships = (await org.getOrganizationMemberships()).items;
+  const userIdToOrgMembershipId = new Map<string, string>(
+    orgMemberships.map((m: any) => [m.sys.user?.sys.id, m.sys.id])
+  );
+
+  // Existing team-membership rows for this team (so we don't double-add).
+  let existingTeamMemberUserIds = new Set<string>();
+  try {
+    const tmList = await org.getTeamMemberships({ teamId: team.sys.id });
+    existingTeamMemberUserIds = new Set(
+      tmList.items.map((m: any) => m.sys.user?.sys.id).filter(Boolean)
+    );
+  } catch { /* if listing fails, attempt the create anyway; create is idempotent server-side */ }
+
   for (const userId of members) {
-    const existingMembers = (await team.getTeamMemberships?.() ?? { items: [] }).items;
-    if (!existingMembers.find((m: any) => m.sys.user?.sys.id === userId)) {
-      await org.createTeamMembership(team.sys.id, { admin: false, sys: { user: { sys: { id: userId, type: "Link", linkType: "User" } } } } as any);
+    if (existingTeamMemberUserIds.has(userId)) continue;
+    const orgMembershipId = userIdToOrgMembershipId.get(userId);
+    if (!orgMembershipId) continue; // user is not in this org
+    try {
+      await org.createTeamMembership(team.sys.id, { admin: false, organizationMembershipId: orgMembershipId } as any);
+    } catch (e: any) {
+      // Conflict (already a member) is fine; rethrow anything else.
+      if (e?.sys?.id !== "Conflict" && e?.status !== 409) throw e;
     }
   }
   return team.sys.id;
