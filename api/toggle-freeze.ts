@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "@/lib/auth/verify-app-signature";
+import { checkOrgAdmin } from "@/lib/auth/check-org-admin";
 import { nextStatus, type Action } from "@/lib/freeze/state-machine";
 import { cmaForSpace } from "@/lib/cma/client";
 import { readSpaceState, upsertSpaceState } from "@/lib/content-model/space-state";
@@ -38,6 +39,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (body.spaceId === body.consoleSpaceId) {
     return res.status(422).json({ error: "cannot freeze console space" });
+  }
+
+  // Authorization: require caller to be an Org Admin or Owner (spec 5.2).
+  // NOTE: see consoleEnvFor() below re: ClientAPI union cast.
+  const adminCma = (await cmaForSpace(body.orgId, body.consoleSpaceId)) as any;
+  const adminOrg = await adminCma.getOrganization(body.orgId);
+  try {
+    await checkOrgAdmin(adminOrg, id.userId);
+  } catch (e) {
+    return res.status(403).json({ error: (e as Error).message });
   }
 
   const env = await consoleEnvFor(body.orgId, body.consoleSpaceId);

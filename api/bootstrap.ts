@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "@/lib/auth/verify-app-signature";
+import { checkOrgAdmin } from "@/lib/auth/check-org-admin";
 import { cmaForSpace } from "@/lib/cma/client";
 import { ensureContentTypes } from "@/lib/content-model/ensure-types";
 import { writeConfig } from "@/lib/content-model/governance-config";
@@ -41,8 +42,9 @@ async function ensureWebhook(org: any, name: string, topic: string, url: string,
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "method not allowed" });
+  let identity;
   try {
-    verifyAppSignature({
+    identity = verifyAppSignature({
       method: req.method, path: req.url ?? "",
       headers: req.headers as Record<string, string>,
       body: typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? {})
@@ -60,6 +62,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const space = await cma.getSpace(b.consoleSpaceId);
   const env = await space.getEnvironment("master");
   const org = await cma.getOrganization(b.orgId);
+
+  try {
+    await checkOrgAdmin(org as any, identity.userId);
+  } catch (e) {
+    return res.status(403).json({ error: (e as Error).message });
+  }
 
   await ensureContentTypes(env as any);
 
