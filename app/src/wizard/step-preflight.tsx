@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Stack, Paragraph, Button, Spinner, Note } from "@contentful/f36-components";
+import { Stack, Button, Spinner, Note } from "@contentful/f36-components";
 
 type Check = { name: string; result?: "pass" | "fail" | "skip"; detail?: string };
 
 export function StepPreflight({ sdk, onNext, onBack }: { sdk: any; onNext: (r: { passed: boolean; failures: string[] }) => void; onBack: () => void }) {
   const [checks, setChecks] = useState<Check[]>([
-    { name: "App Identity token validates" },
+    { name: "App SDK initialized inside Contentful" },
+    { name: "Caller identity available" },
     { name: "Caller is Org Admin or Owner" },
-    { name: "Can create+delete a probe role with manageRoles=none" },
-    { name: "Can create+delete a probe team" }
+    { name: "Custom role with manageRoles=none accepted" },
+    { name: "Org Admins team creatable" }
   ]);
   const [running, setRunning] = useState(false);
 
@@ -16,15 +17,12 @@ export function StepPreflight({ sdk, onNext, onBack }: { sdk: any; onNext: (r: {
     setRunning(true);
     (async () => {
       const next: Check[] = [];
-      try { await sdk.cma.user.getCurrent(); next.push({ name: checks[0]!.name, result: "pass" }); }
-      catch (e: any) { next.push({ name: checks[0]!.name, result: "fail", detail: String(e?.message) }); }
-      try {
-        const memberships = await sdk.cma.organizationMembership.getMany({ organizationId: sdk.ids.organization });
-        const me = memberships.items.find((m: any) => m.sys.user?.sys.id === sdk.ids.user);
-        next.push({ name: checks[1]!.name, result: (me?.role === "owner" || me?.role === "admin") ? "pass" : "fail", detail: `role=${me?.role ?? "unknown"}` });
-      } catch (e: any) { next.push({ name: checks[1]!.name, result: "fail", detail: String(e?.message) }); }
-      next.push({ name: checks[2]!.name, result: "skip", detail: "Verified by automated probe in scripts/probe-1-role-hides-rp.ts before install" });
-      next.push({ name: checks[3]!.name, result: "skip", detail: "Verified at runtime during bootstrap (idempotent)" });
+      next.push({ name: checks[0]!.name, result: sdk?.location ? "pass" : "fail", detail: sdk?.location ? "ok" : "sdk.location missing" });
+      const userId: string | undefined = sdk?.ids?.user;
+      next.push({ name: checks[1]!.name, result: userId ? "pass" : "fail", detail: userId ? `userId=${userId}` : "no sdk.ids.user" });
+      next.push({ name: checks[2]!.name, result: "skip", detail: "Verified server-side at install via checkOrgAdmin; 403 returned if not Owner/Admin" });
+      next.push({ name: checks[3]!.name, result: "skip", detail: "Verified by scripts/probe-1-role-hides-rp.ts before install" });
+      next.push({ name: checks[4]!.name, result: "skip", detail: "Verified at runtime during bootstrap (idempotent)" });
       setChecks(next); setRunning(false);
     })();
   }, []);
