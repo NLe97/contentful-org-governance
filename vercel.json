@@ -1,8 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/**/*.ts": { "runtime": "@vercel/node" }
-  },
+  "buildCommand": "pnpm install --frozen-lockfile=false && cd app && pnpm install --frozen-lockfile=false && pnpm build",
+  "outputDirectory": "app/dist",
   "crons": [
     { "path": "/api/cron/reconcile", "schedule": "0 5 * * *" }
   ]
