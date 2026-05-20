@@ -1,4 +1,4 @@
-import { SPACE_STATE_TYPE } from "./content-types";
+import { SPACE_STATE_TYPE } from "./content-types.js";
 
 export type SpaceStateFields = {
   spaceId: string;

@@ -1,4 +1,4 @@
-import { GOVERNANCE_CONFIG_TYPE } from "./content-types";
+import { GOVERNANCE_CONFIG_TYPE } from "./content-types.js";
 
 export type GovernanceConfigFields = {
   orgAdminsTeamId?: string;

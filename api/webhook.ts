@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyWebhookHmac } from "../lib/auth/verify-webhook-hmac";
-import { deriveWebhookSecret } from "../lib/secrets/derive-webhook-secret";
-import { routeByTopic } from "../lib/webhook/route-by-topic";
-import { cmaForSpace } from "../lib/cma/client";
-import { ensureTeamAttached } from "../lib/fanout/ensure-team-attached";
-import { appendAudit } from "../lib/content-model/audit-event";
-import { upsertSpaceState } from "../lib/content-model/space-state";
-import { readConfig } from "../lib/content-model/governance-config";
+import { verifyWebhookHmac } from "../lib/auth/verify-webhook-hmac.js";
+import { deriveWebhookSecret } from "../lib/secrets/derive-webhook-secret.js";
+import { routeByTopic } from "../lib/webhook/route-by-topic.js";
+import { cmaForSpace } from "../lib/cma/client.js";
+import { ensureTeamAttached } from "../lib/fanout/ensure-team-attached.js";
+import { appendAudit } from "../lib/content-model/audit-event.js";
+import { upsertSpaceState } from "../lib/content-model/space-state.js";
+import { readConfig } from "../lib/content-model/governance-config.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const installationId = req.headers["x-contentful-installation-id"] as string | undefined;

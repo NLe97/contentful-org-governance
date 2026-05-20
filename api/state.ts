@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyAppSignature } from "../lib/auth/verify-app-signature";
-import { cmaForSpace } from "../lib/cma/client";
-import { readSpaceState } from "../lib/content-model/space-state";
+import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
+import { cmaForSpace } from "../lib/cma/client.js";
+import { readSpaceState } from "../lib/content-model/space-state.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {

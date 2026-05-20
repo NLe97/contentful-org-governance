@@ -1,7 +1,7 @@
 import {
   GOVERNANCE_CONFIG_TYPE, SPACE_STATE_TYPE, AUDIT_EVENT_TYPE,
   GOVERNANCE_CONFIG_SCHEMA, SPACE_STATE_SCHEMA, AUDIT_EVENT_SCHEMA
-} from "./content-types";
+} from "./content-types.js";
 
 type Env = {
   getContentTypes(): Promise<{ items: { sys: { id: string } }[] }>;

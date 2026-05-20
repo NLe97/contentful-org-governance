@@ -1,6 +1,6 @@
 import cmaPkg from "contentful-management";
 import { getManagementToken } from "@contentful/node-apps-toolkit";
-import { TokenCache } from "./token-cache";
+import { TokenCache } from "./token-cache.js";
 
 // NOTE: Use default import with named destructuring due to Node ESM compatibility
 // with contentful-management@11 (named imports break).

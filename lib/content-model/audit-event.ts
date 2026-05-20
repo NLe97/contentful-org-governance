@@ -1,4 +1,4 @@
-import { AUDIT_EVENT_TYPE } from "./content-types";
+import { AUDIT_EVENT_TYPE } from "./content-types.js";
 
 export type AuditEventType =
   | "FREEZE_TOGGLED" | "TEAM_ATTACHED" | "TEAM_REMOVED_DETECTED" | "RECONCILE_RUN"

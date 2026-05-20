@@ -1,15 +1,15 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyAppSignature } from "../lib/auth/verify-app-signature";
-import { checkOrgAdmin } from "../lib/auth/check-org-admin";
-import { nextStatus, type Action } from "../lib/freeze/state-machine";
-import { cmaForSpace } from "../lib/cma/client";
-import { readSpaceState, upsertSpaceState } from "../lib/content-model/space-state";
-import { readConfig } from "../lib/content-model/governance-config";
-import { appendAudit } from "../lib/content-model/audit-event";
-import { runTransition } from "../lib/freeze/run-transition";
-import { ensureFrozenRole } from "../lib/freeze/ensure-frozen-role";
-import { enumerateSpaceAdmins } from "../lib/freeze/enumerate-admins";
-import { substituteMembership, restoreMembership } from "../lib/freeze/substitute";
+import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
+import { checkOrgAdmin } from "../lib/auth/check-org-admin.js";
+import { nextStatus, type Action } from "../lib/freeze/state-machine.js";
+import { cmaForSpace } from "../lib/cma/client.js";
+import { readSpaceState, upsertSpaceState } from "../lib/content-model/space-state.js";
+import { readConfig } from "../lib/content-model/governance-config.js";
+import { appendAudit } from "../lib/content-model/audit-event.js";
+import { runTransition } from "../lib/freeze/run-transition.js";
+import { ensureFrozenRole } from "../lib/freeze/ensure-frozen-role.js";
+import { enumerateSpaceAdmins } from "../lib/freeze/enumerate-admins.js";
+import { substituteMembership, restoreMembership } from "../lib/freeze/substitute.js";
 
 async function consoleEnvFor(orgId: string, consoleSpaceId: string) {
   // NOTE: cmaForSpace() returns a union `ClientAPI` where `getSpace` only

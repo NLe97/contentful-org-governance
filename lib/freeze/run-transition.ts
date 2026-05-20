@@ -1,5 +1,5 @@
-import type { SubstitutionRecord } from "./substitute";
-import type { Action } from "./state-machine";
+import type { SubstitutionRecord } from "./substitute.js";
+import type { Action } from "./state-machine.js";
 
 export type RunDeps = {
   spaceId: string;

@@ -1,5 +1,5 @@
-import type { FanoutResult } from "./ensure-team-attached";
-import { ensureTeamAttached as defaultEnsure } from "./ensure-team-attached";
+import type { FanoutResult } from "./ensure-team-attached.js";
+import { ensureTeamAttached as defaultEnsure } from "./ensure-team-attached.js";
 
 export type SweepCounts = { attached: number; repaired: number; noop: number };
 

@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyAppSignature } from "../lib/auth/verify-app-signature";
-import { checkOrgAdmin } from "../lib/auth/check-org-admin";
-import { cmaForSpace } from "../lib/cma/client";
-import { ensureContentTypes } from "../lib/content-model/ensure-types";
-import { writeConfig } from "../lib/content-model/governance-config";
-import { appendAudit } from "../lib/content-model/audit-event";
-import { sweep } from "../lib/fanout/sweep";
-import { ensureTeamAttached } from "../lib/fanout/ensure-team-attached";
-import { deriveWebhookSecret } from "../lib/secrets/derive-webhook-secret";
+import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
+import { checkOrgAdmin } from "../lib/auth/check-org-admin.js";
+import { cmaForSpace } from "../lib/cma/client.js";
+import { ensureContentTypes } from "../lib/content-model/ensure-types.js";
+import { writeConfig } from "../lib/content-model/governance-config.js";
+import { appendAudit } from "../lib/content-model/audit-event.js";
+import { sweep } from "../lib/fanout/sweep.js";
+import { ensureTeamAttached } from "../lib/fanout/ensure-team-attached.js";
+import { deriveWebhookSecret } from "../lib/secrets/derive-webhook-secret.js";
 
 type BootstrapBody = {
   orgId: string;
