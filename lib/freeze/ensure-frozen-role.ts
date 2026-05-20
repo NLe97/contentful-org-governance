@@ -15,10 +15,9 @@ export async function ensureFrozenRole(space: Space, frozenRoleName: string): Pr
       ContentModel: "all",
       EnvironmentAliases: "all",
       Environments: "all",
-      Settings: ["editLocales", "manageEnvironments", "manageEnvironmentAliases", "configureSpace"],
+      Settings: "all",
       Tags: "all"
-    },
-    policies: [{ effect: "allow", actions: "all", constraint: { and: [] } }]
+    }
   });
   return created.sys.id;
 }
