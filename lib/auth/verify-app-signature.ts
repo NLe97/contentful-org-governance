@@ -16,7 +16,7 @@ export function verifyAppSignature(req: IncomingReq, appPrivateKey: string): App
     throw new Error("Stale or missing timestamp");
   }
   const ok = verifyRequest(appPrivateKey, {
-    method: req.method,
+    method: req.method as "GET" | "PATCH" | "HEAD" | "POST" | "DELETE" | "OPTIONS" | "PUT",
     path: req.path,
     headers: req.headers as Record<string, string>,
     body: req.body

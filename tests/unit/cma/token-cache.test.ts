@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TokenCache } from "@/lib/cma/token-cache";
 
 describe("TokenCache", () => {
-  let mint: ReturnType<typeof vi.fn>;
+  let mint: ReturnType<typeof vi.fn<[string, string], Promise<{ token: string; expiresAt: number }>>>;
   let cache: TokenCache;
   beforeEach(() => {
-    mint = vi.fn(async (orgId: string, spaceId: string) => ({
+    mint = vi.fn<[string, string], Promise<{ token: string; expiresAt: number }>>(async (orgId: string, spaceId: string) => ({
       token: `t-${orgId}-${spaceId}-${Date.now()}`,
       expiresAt: Date.now() + 60_000
     }));

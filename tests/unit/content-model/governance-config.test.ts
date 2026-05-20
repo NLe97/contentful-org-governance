@@ -6,7 +6,7 @@ function fakeEnv(initial?: any) {
   return {
     getEntries: vi.fn(async () => ({ items: store.entry ? [store.entry] : [] })),
     createEntry: vi.fn(async (_t: string, payload: any) => {
-      store.entry = { sys: { id: "cfg", version: 1 }, fields: payload.fields, update: vi.fn(async function () { return this; }) };
+      store.entry = { sys: { id: "cfg", version: 1 }, fields: payload.fields, update: vi.fn(async function (this: any) { return this; }) };
       return store.entry;
     })
   } as any;
