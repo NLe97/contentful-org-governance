@@ -1,5 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
+import { readRawBody } from "../lib/auth/raw-body.js";
+
+// Disable Vercel's default JSON body parser so we can read the raw bytes
+// that Contentful signed. Re-stringifying a parsed body would not match.
+export const config = { api: { bodyParser: false } };
 import { checkOrgAdmin } from "../lib/auth/check-org-admin.js";
 import { cmaForSpace } from "../lib/cma/client.js";
 import { ensureContentTypes } from "../lib/content-model/ensure-types.js";
@@ -42,16 +47,19 @@ async function ensureWebhook(org: any, name: string, topic: string, url: string,
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "method not allowed" });
+  const raw = await readRawBody(req);
   let identity;
   try {
     identity = verifyAppSignature({
       method: req.method, path: req.url ?? "",
       headers: req.headers as Record<string, string>,
-      body: typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? {})
-    }, process.env.APP_PRIVATE_KEY!);
-  } catch { return res.status(401).json({ error: "invalid signature" }); }
+      body: raw
+    });
+  } catch (e) { return res.status(401).json({ error: "invalid signature", detail: (e as Error).message }); }
 
-  const b = req.body as BootstrapBody;
+  let b: BootstrapBody;
+  try { b = raw ? JSON.parse(raw) : ({} as any); }
+  catch { return res.status(400).json({ error: "invalid json body" }); }
   if (!b?.orgId || !b?.installationId || !b?.consoleSpaceId) return res.status(400).json({ error: "missing fields" });
 
   const teamName = b.orgAdminsTeamName ?? "Org Admins";

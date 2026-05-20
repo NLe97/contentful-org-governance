@@ -8,9 +8,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     verifyAppSignature({
       method: req.method ?? "GET", path: req.url ?? "",
       headers: req.headers as Record<string, string>,
-      body: typeof req.body === "string" ? req.body : ""
-    }, process.env.APP_PRIVATE_KEY!);
-  } catch { return res.status(401).json({ error: "invalid signature" }); }
+      body: ""
+    });
+  } catch (e) { return res.status(401).json({ error: "invalid signature", detail: (e as Error).message }); }
 
   const spaceId = String(req.query.spaceId ?? "");
   const orgId = String(req.query.orgId ?? "");

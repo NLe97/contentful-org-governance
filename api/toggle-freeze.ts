@@ -1,5 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
+import { readRawBody } from "../lib/auth/raw-body.js";
+
+// See bootstrap.ts: disable body parser so signed-request verification can
+// use the exact bytes Contentful hashed.
+export const config = { api: { bodyParser: false } };
 import { checkOrgAdmin } from "../lib/auth/check-org-admin.js";
 import { nextStatus, type Action } from "../lib/freeze/state-machine.js";
 import { cmaForSpace } from "../lib/cma/client.js";
@@ -22,6 +27,7 @@ async function consoleEnvFor(orgId: string, consoleSpaceId: string) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "method not allowed" });
+  const raw = await readRawBody(req);
 
   let id;
   try {
@@ -29,11 +35,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       method: req.method,
       path: req.url ?? "",
       headers: req.headers as Record<string, string>,
-      body: typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? {})
-    }, process.env.APP_PRIVATE_KEY!);
-  } catch { return res.status(401).json({ error: "invalid signature" }); }
+      body: raw
+    });
+  } catch (e) { return res.status(401).json({ error: "invalid signature", detail: (e as Error).message }); }
 
-  const body = req.body as { spaceId?: string; action?: Action; orgId?: string; consoleSpaceId?: string };
+  let body: { spaceId?: string; action?: Action; orgId?: string; consoleSpaceId?: string };
+  try { body = raw ? JSON.parse(raw) : {}; }
+  catch { return res.status(400).json({ error: "invalid json body" }); }
   if (!body.spaceId || !body.action || !body.orgId || !body.consoleSpaceId) {
     return res.status(400).json({ error: "missing fields" });
   }
