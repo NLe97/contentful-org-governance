@@ -10,12 +10,18 @@ export type IncomingReq = {
 
 const MAX_SKEW_MS = 30_000;
 
-export function verifyAppSignature(req: IncomingReq, appPrivateKey: string): AppIdentity {
+// `secret` should be the App Definition's signing secret (registered via
+// PUT /organizations/{org}/app_definitions/{def}/signing_secret). The old
+// signature accepted the App private key — that was wrong; the private key is
+// for App Identity (getManagementToken), not for verifying signed requests.
+export function verifyAppSignature(req: IncomingReq, secret?: string): AppIdentity {
+  const signingSecret = secret ?? process.env.APP_SIGNING_SECRET;
+  if (!signingSecret) throw new Error("APP_SIGNING_SECRET not configured");
   const ts = Number(req.headers["x-contentful-timestamp"]);
   if (!ts || Math.abs(Date.now() - ts) > MAX_SKEW_MS) {
     throw new Error("Stale or missing timestamp");
   }
-  const ok = verifyRequest(appPrivateKey, {
+  const ok = verifyRequest(signingSecret, {
     method: req.method as "GET" | "PATCH" | "HEAD" | "POST" | "DELETE" | "OPTIONS" | "PUT",
     path: req.path,
     headers: req.headers as Record<string, string>,
