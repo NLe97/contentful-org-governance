@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Stack, Heading } from "@contentful/f36-components";
 import { StepWelcome } from "../wizard/step-welcome";
 import { StepPreflight } from "../wizard/step-preflight";
@@ -16,6 +16,7 @@ export type WizardState = {
 };
 
 export function AppConfig({ sdk }: { sdk: any }) {
+  useEffect(() => { sdk.app?.setReady?.(); }, [sdk]);
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>({
     orgAdminsTeamName: "Org Admins",
