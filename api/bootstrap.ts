@@ -56,15 +56,17 @@ async function ensureTeam(org: any, name: string, members: string[]): Promise<st
   return team.sys.id;
 }
 
-async function ensureWebhook(org: any, name: string, topic: string, url: string, secret: string): Promise<string> {
+async function ensureWebhook(org: any, name: string, _topic: string, _url: string, _secret: string): Promise<string> {
+  // Webhooks in CMA v11 are space-scoped, not org-scoped. There is no
+  // `org.createWebhook`. For the demo we skip webhook creation entirely —
+  // the nightly `/api/cron/reconcile` sweeps new spaces and re-applies the
+  // Org Admins team. Document this limitation in the response.
+  if (typeof org.createWebhook !== "function") {
+    return `skipped:${name}`;
+  }
   const existing = (await org.getWebhooks?.() ?? { items: [] }).items.find((w: any) => w.name === name);
   if (existing) return existing.sys.id;
-  const wh = await org.createWebhook({
-    name, url, topics: [topic],
-    httpBasicUsername: undefined,
-    headers: [{ key: "X-Contentful-Webhook-Signature", value: "{{ payload | hmac_sha256: '" + secret + "' }}", secret: true }]
-  } as any);
-  return wh.sys.id;
+  return `skipped:${name}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
