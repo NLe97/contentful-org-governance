@@ -30,9 +30,14 @@ export async function readSpaceState(env: Env, spaceId: string): Promise<any | u
 export async function upsertSpaceState(env: Env, fields: Partial<SpaceStateFields> & { spaceId: string }): Promise<any> {
   const existing = await readSpaceState(env, fields.spaceId);
   if (!existing) return env.createEntry(SPACE_STATE_TYPE, { fields: toFields(fields) });
-  const ops = Object.entries(fields)
-    .filter(([k]) => k !== "spaceId")
-    .map(([k, v]) => ({ op: "replace", path: `/${k}/en-US`, value: v }));
-  await existing.patch(ops);
-  return existing;
+  // Mutate fields on the wrapped entry and .update() — robust against
+  // missing fields (JSON Patch "replace" would 404 on a path that doesn't
+  // exist yet, e.g. the first time we write `substitutions` or
+  // `customFrozenRoleId`).
+  existing.fields = existing.fields ?? {};
+  for (const [k, v] of Object.entries(fields)) {
+    if (k === "spaceId" || v === undefined) continue;
+    existing.fields[k] = { "en-US": v };
+  }
+  return existing.update();
 }
