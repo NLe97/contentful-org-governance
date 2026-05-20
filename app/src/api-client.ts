@@ -1,15 +1,42 @@
 type AppSdk = any;
 
 async function callSigned(sdk: AppSdk, path: string, init: RequestInit) {
-  const signed = await sdk.cma.appSignedRequest.create({ appDefinitionId: sdk.ids.app! }, {
-    method: init.method ?? "GET",
-    headers: { "Content-Type": "application/json" } as any,
-    path,
-    body: init.body as any ?? ""
-  });
+  const method = (init.method ?? "GET").toUpperCase();
+  const body = init.body as string | undefined;
+
+  // Ask Contentful to sign the request. We pass the method/path/headers/body
+  // we *intend* to send so the signature covers the canonical request.
+  const signed = await sdk.cma.appSignedRequest.create(
+    { appDefinitionId: sdk.ids.app! },
+    {
+      method,
+      headers: { "Content-Type": "application/json" } as any,
+      path,
+      body: body ?? ""
+    }
+  );
+
+  // The signing response gives us signature headers under one of these names
+  // depending on SDK version.
+  const sigHeaders =
+    (signed as any).additionalHeaders ??
+    (signed as any).headers ??
+    {};
+
+  const fetchInit: RequestInit = {
+    method,
+    headers: { "Content-Type": "application/json", ...sigHeaders }
+  };
+  if (method !== "GET" && method !== "HEAD" && body !== undefined) {
+    fetchInit.body = body;
+  }
+
   const url = `${(window as any).GOV_API_BASE ?? ""}${path}`;
-  const res = await fetch(url, { method: signed.method, headers: signed.headers as any, body: init.body });
-  if (!res.ok) throw Object.assign(new Error(`${res.status}`), { status: res.status, body: await res.text() });
+  const res = await fetch(url, fetchInit);
+  if (!res.ok) {
+    const text = await res.text();
+    throw Object.assign(new Error(`HTTP ${res.status}: ${text}`), { status: res.status, body: text });
+  }
   return res.json();
 }
 
