@@ -81,10 +81,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const targetCma = (await cmaForSpace(body.orgId, body.spaceId)) as any;
   const targetSpace = await targetCma.getSpace(body.spaceId);
 
-  // NOTE: globalThis.Vercel?.waitUntil?.(...) is a Vercel-runtime-only API. Locally
-  // and in unit tests this is a no-op (the substitution loop won't execute). The
-  // real-runtime path is exercised by integration tests.
-  (globalThis as any).Vercel?.waitUntil?.(runTransition(body.action, {
+  // Run the transition synchronously. `globalThis.Vercel?.waitUntil` was
+  // unreliable across runtime versions and caused stuck TRANSITIONING_*
+  // states. For small admin counts this completes well inside the 10s
+  // Vercel timeout. If we later need to handle orgs with many admins per
+  // space, switch to `waitUntil` from `@vercel/functions`.
+  await runTransition(body.action, {
     spaceId: body.spaceId,
     actorUserId: id.userId,
     frozenRoleName: config?.fields.frozenRoleName?.["en-US"] ?? "Space Admin (frozen)",
@@ -96,7 +98,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     writeState: async (patch) => { await upsertSpaceState(env, { spaceId: body.spaceId!, ...patch } as any); },
     audit: async (ev) => { await appendAudit(env, { eventType: ev.eventType as any, spaceId: body.spaceId!, actorUserId: "system", details: ev.details }); },
     priorSubstitutions: stateEntry?.fields.substitutions?.["en-US"] ?? {}
-  }));
+  });
 
-  return res.status(200).json({ ok: true, jobId, currentStatus: t.next, previousStatus: curStatus });
+  // Re-read final state so the response reflects FROZEN / OFF / DEGRADED.
+  const finalEntry = await readSpaceState(env, body.spaceId);
+  const finalStatus = finalEntry?.fields.freezeStatus?.["en-US"] ?? t.next;
+
+  return res.status(200).json({ ok: true, jobId, currentStatus: finalStatus, previousStatus: curStatus });
 }
