@@ -36,13 +36,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await routeByTopic(topic, req.body, {
       onSpaceCreate: async ({ spaceId }) => {
-        await ensureTeamAttached(org as any, teamId, spaceId);
+        const space = await cma.getSpace(spaceId);
+        await ensureTeamAttached({ org: org as any, space: space as any, teamId });
         await upsertSpaceState(consoleEnv, { spaceId, freezeStatus: "OFF" });
         await appendAudit(consoleEnv, { eventType: "TEAM_ATTACHED", spaceId, actorUserId: "system", details: { trigger: "webhook" } });
       },
       onTeamSpaceMembershipDelete: async ({ teamId: t, spaceId }) => {
         if (t !== teamId) return;
-        await ensureTeamAttached(org as any, teamId, spaceId);
+        const space = await cma.getSpace(spaceId);
+        await ensureTeamAttached({ org: org as any, space: space as any, teamId });
         await appendAudit(consoleEnv, { eventType: "TEAM_REMOVED_DETECTED", spaceId, actorUserId: "system", details: { reattached: true } });
       }
     });

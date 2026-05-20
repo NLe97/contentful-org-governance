@@ -114,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const wh2 = await ensureWebhook(org as any, `org-gov-team-remove-${b.installationId}`, "ContentManagement.TeamSpaceMembership.delete",
     `${vercelBase}/api/webhook`, secret);
 
-  const swept = await sweep(org as any, teamId, b.consoleSpaceId, ensureTeamAttached as any);
+  const swept = await sweep(cma as any, b.orgId, teamId, b.consoleSpaceId);
   await appendAudit(env, { eventType: "RECONCILE_RUN", actorUserId: "system", details: { phase: "bootstrap", swept } });
 
   return res.status(200).json({ ok: true, orgAdminsTeamId: teamId, swept, webhookIds: [wh1, wh2] });

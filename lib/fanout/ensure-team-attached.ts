@@ -1,18 +1,22 @@
+// v11 CMA quirk: `getTeamSpaceMemberships` lives on Organization, but
+// `createTeamSpaceMembership` lives on Space (probed live in Task 3).
+// Callers therefore need to provide BOTH an org handle (for the query)
+// and a space handle (for the create).
+
 type Org = {
   getTeamSpaceMemberships(q: Record<string, unknown>): Promise<{ items: any[] }>;
-  createTeamSpaceMembership(teamId: string, payload: any): Promise<any>;
+};
+type Space = {
+  sys: { id: string };
+  createTeamSpaceMembership(teamId: string, payload: { admin: boolean; roles: unknown[] }): Promise<any>;
 };
 
 export type FanoutResult = "ATTACHED" | "NO_OP" | "REPAIRED";
+export type EnsureArgs = { org: Org; space: Space; teamId: string };
 
-export async function ensureTeamAttached(org: Org, teamId: string, spaceId: string): Promise<FanoutResult> {
-  const r = await org.getTeamSpaceMemberships({ "sys.team.sys.id": teamId, "sys.space.sys.id": spaceId });
-  const adminMembership = r.items.find((m: any) => m.admin === true);
-  if (adminMembership) return "NO_OP";
-  await org.createTeamSpaceMembership(teamId, {
-    admin: true,
-    roles: [],
-    sys: { space: { sys: { id: spaceId, type: "Link", linkType: "Space" } } }
-  });
+export async function ensureTeamAttached({ org, space, teamId }: EnsureArgs): Promise<FanoutResult> {
+  const r = await org.getTeamSpaceMemberships({ teamId, spaceId: space.sys.id });
+  if (r.items.some((m: any) => m.admin === true)) return "NO_OP";
+  await space.createTeamSpaceMembership(teamId, { admin: true, roles: [] });
   return "ATTACHED";
 }

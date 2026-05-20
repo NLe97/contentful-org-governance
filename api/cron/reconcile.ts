@@ -30,8 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const config = await readConfig(env);
       const teamId = config?.fields.orgAdminsTeamId?.["en-US"];
       if (!teamId) { out.push({ installationId: inst.installationId, skipped: "no teamId" }); continue; }
-      const org = await cma.getOrganization(inst.orgId);
-      const swept = await sweep(org as any, teamId, inst.consoleSpaceId, ensureTeamAttached as any);
+      const swept = await sweep(cma as any, inst.orgId, teamId, inst.consoleSpaceId);
       await appendAudit(env, { eventType: "RECONCILE_RUN", actorUserId: "system", details: { phase: "cron", swept } });
       out.push({ installationId: inst.installationId, swept });
     } catch (e) {
