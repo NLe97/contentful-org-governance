@@ -44,5 +44,7 @@ export const api = {
   bootstrap: (sdk: AppSdk, body: object) => callSigned(sdk, "/api/bootstrap", { method: "POST", body: JSON.stringify(body) }),
   toggleFreeze: (sdk: AppSdk, body: object) => callSigned(sdk, "/api/toggle-freeze", { method: "POST", body: JSON.stringify(body) }),
   getState: (sdk: AppSdk, q: Record<string, string>) =>
-    callSigned(sdk, `/api/state?${new URLSearchParams(q).toString()}`, { method: "GET" })
+    callSigned(sdk, `/api/state?${new URLSearchParams(q).toString()}`, { method: "GET" }),
+  listSpaces: (sdk: AppSdk, q: Record<string, string>) =>
+    callSigned(sdk, `/api/spaces?${new URLSearchParams(q).toString()}`, { method: "GET" })
 };
