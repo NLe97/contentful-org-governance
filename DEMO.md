@@ -45,10 +45,20 @@ Behind the scenes:
 
 ## Demo 2 — Role substitution freeze (MVP 2)
 
-**Goal:** show that clicking **Freeze** on a non-console space removes admin
-rights from every direct space-admin in that space (replacing the built-in
-Admin role with a custom "Space Admin (frozen)" role that has no permissions),
-and **Thaw** restores them.
+**Goal:** show that clicking **Freeze** on a non-console space demotes every
+direct space-admin in that space from full Admin to a custom **read-only**
+"Space Admin (frozen)" role — they can still view content (entries, assets,
+content model) but can't edit, publish, delete, or change settings — and
+**Thaw** restores their Admin rights.
+
+### Important distinction: Org Admin vs Space Admin
+
+Freeze targets **Space Admins** (per-space memberships marked `admin: true`).
+It does NOT and cannot prevent an **Org Admin / Owner** from going into Org
+Settings → Spaces → Ben Test and re-adding themselves as an Admin. Org-level
+power is by design above the app. Freeze is a guardrail against routine
+editing during a sensitive window, not a security boundary against the
+people who own the org.
 
 ### Open the app console
 
@@ -69,8 +79,12 @@ and **Thaw** restores them.
    then to **FROZEN** (red) within ~4 seconds (the UI polls every 4s).
 7. Switch to the Ben Test → **Settings** → **Users** tab and reload. The user
    row now shows the role **Space Admin (frozen)** instead of Admin. That role
-   exists in Ben Test → Settings → Roles & permissions — it has no permissions,
-   so the user can read/edit nothing in that space.
+   exists in Ben Test → Settings → Roles & permissions — it grants **read-only**
+   access (view entries, assets, content model), with no edit, publish,
+   delete, or settings permissions.
+8. To verify the read-only behavior: open the Content tab in Ben Test (as the
+   substituted user). You can browse all entries and assets, but every edit
+   action (publish, save, delete, add field) is disabled.
 
 ### Thaw
 
