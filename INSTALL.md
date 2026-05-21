@@ -138,18 +138,24 @@ or reuse an existing admin space.
 
 ## Vercel plan limits
 
-| Concern | Hobby | Pro |
+| Concern | Hobby (default) | Pro (upgrade) |
 |---|---|---|
-| Function timeout | 10s default | 60s default, up to 300s |
+| Function timeout | 10s | 60s default, up to 300s |
 | Cron frequency | Daily only | Up to every minute |
-| Recommended for | <30 spaces, ≤5 admins per space | Anything larger |
+| Good for | <30 spaces, ≤5 admins per space | Anything larger |
 
-The repo's `vercel.json` is tuned for **Pro plan** (60s function timeout,
-cron every 30 min). If you're on Hobby:
-- Reduce `maxDuration` in `vercel.json` to `10` for all functions.
-- Change cron schedule to `0 0 * * *` (daily at midnight UTC).
-- Reduce expectations: fan-out may take a day to catch new spaces; freeze
-  may time out on spaces with many admins.
+**The repo's `vercel.json` defaults work on Hobby** (10s function timeout,
+daily cron at 06:00 UTC). For organizations with **30+ spaces** or **many
+admins per space**, you'll likely need Pro:
+
+- Bump `maxDuration` in `vercel.json` to `60` (or up to `300` on Enterprise).
+- Change cron schedule to `*/30 * * * *` (every 30 min) or finer.
+
+Symptoms that you've outgrown Hobby:
+- Freeze hangs on `TRANSITIONING_ON` then drops to `DEGRADED` — function
+  hit the 10s timeout mid-substitution.
+- New spaces take >24h to appear in the Org Admins team — daily cron is
+  too infrequent.
 
 ## Manual reconcile
 
