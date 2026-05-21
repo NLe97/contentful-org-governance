@@ -144,10 +144,10 @@ of the frontend is worth trying — it removes one network hop on cold load.
 
 ## Operational housekeeping
 
-- The dev PAT (`CFPAT-REDACTED`) is hardcoded
-  as `CF_DEV_PAT` in Vercel env. Rotate it after demo by issuing a new PAT in
-  Contentful → Account → CMA tokens, replacing `CF_DEV_PAT` in Vercel, and
-  redeploying.
+- The dev PAT is stored as `CONTENTFUL_MANAGEMENT_TOKEN` (legacy fallback:
+  `CF_DEV_PAT`) in Vercel env. **Rotate it after every demo** by issuing a new
+  PAT in Contentful → Account → CMA tokens, updating the Vercel env var, and
+  redeploying. Never paste PAT values into committed files.
 - Cron schedule lives in `vercel.json` (`/api/cron/reconcile` every 5 minutes).
 - App Signing Secret is stored as `APP_SIGNING_SECRET`. If you rotate it in
   Contentful (`PUT /organizations/{org}/app_definitions/{def}/signing_secret`),
