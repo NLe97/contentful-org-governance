@@ -3,9 +3,14 @@ import cmaPkg from "contentful-management";
 const { createClient } = cmaPkg;
 import { upsertSpaceState, readSpaceState } from "../lib/content-model/space-state.js";
 
-const PAT = process.env.CF_DEV_PAT!;
-const CONSOLE = "ubgf1y7ixw5q";
-const TARGET = "hgnalq3865je";
+function reqEnv(name: string, fallback?: string): string {
+  const v = process.env[name] ?? fallback;
+  if (!v) { console.error(`Missing required env: ${name}`); process.exit(2); }
+  return v;
+}
+const PAT = reqEnv("CONTENTFUL_MANAGEMENT_TOKEN", process.env.CF_DEV_PAT);
+const CONSOLE = reqEnv("CF_CONSOLE_SPACE_ID");
+const TARGET = reqEnv("CF_TARGET_SPACE_ID");
 
 const cma = createClient({ accessToken: PAT });
 const env = await (await cma.getSpace(CONSOLE)).getEnvironment("master");

@@ -2,7 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm install --frozen-lockfile=false && cd app && pnpm install --frozen-lockfile=false && pnpm build",
   "outputDirectory": "app/dist",
+  "functions": {
+    "api/cron/reconcile.ts": { "maxDuration": 60 },
+    "api/toggle-freeze.ts": { "maxDuration": 60 },
+    "api/bootstrap.ts": { "maxDuration": 60 },
+    "api/webhook.ts": { "maxDuration": 30 }
+  },
   "crons": [
-    { "path": "/api/cron/reconcile", "schedule": "0 5 * * *" }
+    { "path": "/api/cron/reconcile", "schedule": "*/30 * * * *" }
   ]
 }

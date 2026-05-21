@@ -11,11 +11,18 @@ import { substituteMembership, restoreMembership } from "../lib/freeze/substitut
 import { upsertSpaceState, readSpaceState } from "../lib/content-model/space-state.js";
 import { appendAudit } from "../lib/content-model/audit-event.js";
 
-const PAT = process.env.CF_DEV_PAT!;
-const ORG = "30SScScam27l3EU95xxctv";
-const CONSOLE = "ubgf1y7ixw5q";   // Jobs
-const TARGET = "hgnalq3865je";    // Ben Test
-const ACTOR = "79NtAR8RbesjN1TmF2dOa2";
+// Required env: CONTENTFUL_MANAGEMENT_TOKEN, CF_ORG_ID, CF_CONSOLE_SPACE_ID,
+// CF_TARGET_SPACE_ID, CF_ACTOR_USER_ID. Falls back to CF_DEV_PAT for the PAT.
+function reqEnv(name: string, fallback?: string): string {
+  const v = process.env[name] ?? fallback;
+  if (!v) { console.error(`Missing required env: ${name}`); process.exit(2); }
+  return v;
+}
+const PAT = reqEnv("CONTENTFUL_MANAGEMENT_TOKEN", process.env.CF_DEV_PAT);
+const ORG = reqEnv("CF_ORG_ID");
+const CONSOLE = reqEnv("CF_CONSOLE_SPACE_ID");
+const TARGET = reqEnv("CF_TARGET_SPACE_ID");
+const ACTOR = reqEnv("CF_ACTOR_USER_ID");
 
 const cma = createClient({ accessToken: PAT });
 

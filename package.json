@@ -12,7 +12,10 @@
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
     "build:app": "cd app && pnpm build",
-    "dev:app": "cd app && pnpm dev"
+    "dev:app": "cd app && pnpm dev",
+    "setup:app-definition": "tsx scripts/create-app-definition.ts",
+    "qa:state": "tsx scripts/qa-check-state.ts",
+    "qa:freeze-thaw": "tsx scripts/qa-freeze-thaw.ts"
   },
   "dependencies": {
     "@contentful/node-apps-toolkit": "^3.4.0",

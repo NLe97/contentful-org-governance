@@ -4,8 +4,13 @@
 import cmaPkg from "contentful-management";
 const { createClient } = cmaPkg;
 
-const PAT = process.env.CF_DEV_PAT!;
-const TARGET = "hgnalq3865je";
+function reqEnv(name: string, fallback?: string): string {
+  const v = process.env[name] ?? fallback;
+  if (!v) { console.error(`Missing required env: ${name}`); process.exit(2); }
+  return v;
+}
+const PAT = reqEnv("CONTENTFUL_MANAGEMENT_TOKEN", process.env.CF_DEV_PAT);
+const TARGET = reqEnv("CF_TARGET_SPACE_ID");
 const cma = createClient({ accessToken: PAT });
 
 const space = await cma.getSpace(TARGET);

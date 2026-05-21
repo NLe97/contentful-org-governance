@@ -14,6 +14,6 @@ describe("sweep", () => {
     expect(ensure).toHaveBeenCalledTimes(2);
     const calls = ensure.mock.calls.map((c: any[]) => c[0].space.sys.id);
     expect(calls).toEqual(["sA", "sB"]);
-    expect(counts).toEqual({ attached: 1, repaired: 0, noop: 1 });
+    expect(counts).toEqual({ attached: 1, repaired: 0, noop: 1, failed: 0 });
   });
 });

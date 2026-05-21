@@ -9,7 +9,11 @@ type ClientAPI = ReturnType<typeof createClient>;
 
 const APP_DEF = process.env.APP_DEFINITION_ID;
 const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
-const DEV_PAT = process.env.CF_DEV_PAT;
+// CONTENTFUL_MANAGEMENT_TOKEN is the customer's PAT for cross-space ops the
+// App Identity token can't cover (listing org spaces, attaching teams).
+// Recommended: belongs to a dedicated service-account org admin, not a
+// real user. CF_DEV_PAT kept as a fallback alias for back-compat.
+const MANAGEMENT_TOKEN = process.env.CONTENTFUL_MANAGEMENT_TOKEN ?? process.env.CF_DEV_PAT;
 
 async function mintAppToken(_orgId: string, spaceId: string) {
   if (!APP_DEF || !APP_PRIVATE_KEY) throw new Error("App Identity env not configured");
@@ -25,6 +29,6 @@ const cache = new TokenCache(mintAppToken);
 
 // NOTE: _orgId parameter is unused; prefixed with underscore to satisfy strict mode.
 export async function cmaForSpace(_orgId: string, spaceId: string): Promise<ClientAPI> {
-  const accessToken = DEV_PAT ?? (await cache.get(_orgId, spaceId));
+  const accessToken = MANAGEMENT_TOKEN ?? (await cache.get(_orgId, spaceId));
   return createClient({ accessToken });
 }
