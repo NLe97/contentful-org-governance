@@ -1,4 +1,5 @@
 export {};
+import { webcrypto } from "node:crypto";
 // Creates a Contentful App Definition for this app, pointing at the customer's
 // Vercel deployment. Run once per org. Prints the App Definition ID + the
 // generated signing secret so you can paste both into Vercel env vars.
@@ -82,7 +83,9 @@ console.log(`  3. In Contentful UI: Org Settings → Apps → Org Governance →
 console.log(`     into the space you want to be the console (audit log + UI).`);
 
 function cryptoRandom(len: number): string {
+  // Use node:crypto.webcrypto.getRandomValues so this works on Node 18 (which
+  // doesn't expose the Web Crypto API as a global) as well as 19+ / 20 / 22.
   const bytes = new Uint8Array(len);
-  crypto.getRandomValues(bytes);
+  webcrypto.getRandomValues(bytes);
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
