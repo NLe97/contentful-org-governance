@@ -46,5 +46,7 @@ export const api = {
   getState: (sdk: AppSdk, q: Record<string, string>) =>
     callSigned(sdk, `/api/state?${new URLSearchParams(q).toString()}`, { method: "GET" }),
   listSpaces: (sdk: AppSdk, q: Record<string, string>) =>
-    callSigned(sdk, `/api/spaces?${new URLSearchParams(q).toString()}`, { method: "GET" })
+    callSigned(sdk, `/api/spaces?${new URLSearchParams(q).toString()}`, { method: "GET" }),
+  me: (sdk: AppSdk, q: Record<string, string>) =>
+    callSigned(sdk, `/api/me?${new URLSearchParams(q).toString()}`, { method: "GET" })
 };
