@@ -107,15 +107,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   await writeConfig(env, { orgAdminsTeamId: teamId, frozenRoleName: "Space Admin (frozen)", enforcementEnabled: true });
 
+  // Webhook subsystem is currently a no-op (the v11 CMA has no
+  // organization-level webhook create endpoint, see ensureWebhook). We still
+  // derive the per-installation secret for forward compatibility, but ONLY
+  // when GLOBAL_WEBHOOK_SECRET is configured — bootstrap shouldn't 500 just
+  // because that optional env var is missing.
   const vercelBase = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.PUBLIC_BASE_URL ?? "");
-  const secret = deriveWebhookSecret(process.env.GLOBAL_WEBHOOK_SECRET!, b.installationId);
-  const wh1 = await ensureWebhook(org as any, `org-gov-space-create-${b.installationId}`, "ContentManagement.Space.create",
-    `${vercelBase}/api/webhook`, secret);
-  const wh2 = await ensureWebhook(org as any, `org-gov-team-remove-${b.installationId}`, "ContentManagement.TeamSpaceMembership.delete",
-    `${vercelBase}/api/webhook`, secret);
+  let webhookIds: string[] = [];
+  if (process.env.GLOBAL_WEBHOOK_SECRET) {
+    const secret = deriveWebhookSecret(process.env.GLOBAL_WEBHOOK_SECRET, b.installationId);
+    const wh1 = await ensureWebhook(org as any, `org-gov-space-create-${b.installationId}`, "ContentManagement.Space.create",
+      `${vercelBase}/api/webhook`, secret);
+    const wh2 = await ensureWebhook(org as any, `org-gov-team-remove-${b.installationId}`, "ContentManagement.TeamSpaceMembership.delete",
+      `${vercelBase}/api/webhook`, secret);
+    webhookIds = [wh1, wh2];
+  }
 
   const swept = await sweep(cma as any, b.orgId, teamId, b.consoleSpaceId);
   await appendAudit(env, { eventType: "RECONCILE_RUN", actorUserId: "system", details: { phase: "bootstrap", swept } });
 
-  return res.status(200).json({ ok: true, orgAdminsTeamId: teamId, swept, webhookIds: [wh1, wh2] });
+  return res.status(200).json({ ok: true, orgAdminsTeamId: teamId, swept, webhookIds });
 }

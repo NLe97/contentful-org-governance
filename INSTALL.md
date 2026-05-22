@@ -85,7 +85,8 @@ In your Vercel project → **Settings** → **Environment Variables**, add:
 | `CONTENTFUL_MANAGEMENT_TOKEN` | your PAT | from Step 1 |
 | `APP_DEFINITION_ID` | from Step 3 output | |
 | `APP_SIGNING_SECRET` | from Step 3 output | used to verify signed iframe requests |
-| `CRON_SECRET` | any 32-byte random hex string | guards `/api/cron/reconcile` |
+| `CRON_SECRET` | any 32-byte random hex string | guards `/api/cron/reconcile`. Generate with `openssl rand -hex 32` |
+| `GLOBAL_WEBHOOK_SECRET` | any 32-byte random hex string | derive per-installation webhook secrets from this. Optional today (webhook subsystem is dormant), but recommended so future versions don't surprise you. Generate with `openssl rand -hex 32` |
 
 Apply to **Production** environment. Then **Deployments → Redeploy** the
 latest with "Use existing build cache: off."
