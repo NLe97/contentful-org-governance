@@ -26,6 +26,21 @@ export function AppConfig({ sdk }: { sdk: any }) {
     initialMembers: [sdk.ids.user],
     preflight: { passed: false, failures: [] }
   });
+
+  // Register onConfigure at the AppConfig level so Contentful always has a
+  // parameters callback, regardless of which wizard step the user is on
+  // when they click Save. Earlier this was only done in StepReview, so any
+  // user who clicked Save before reaching Review installed the app with NO
+  // parameters and saw the Restricted screen afterward.
+  useEffect(() => {
+    sdk.app?.onConfigure?.(() => ({
+      parameters: {
+        orgAdminsTeamName: state.orgAdminsTeamName,
+        initialMembers: state.initialMembers,
+        consoleSpaceId: state.consoleSpaceId
+      }
+    }));
+  }, [sdk, state]);
   const steps = [
     <StepWelcome key={0} onNext={() => setStep(1)} />,
     <StepPreflight key={1} sdk={sdk} onNext={(r) => { setState({ ...state, preflight: r }); setStep(2); }} onBack={() => setStep(0)} />,

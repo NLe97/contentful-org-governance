@@ -23,18 +23,19 @@ export function Router({ sdk }: { sdk: any }) {
 }
 
 function GatedPage({ sdk }: { sdk: any }) {
-  const [state, setState] = useState<"loading" | "allowed" | "denied">("loading");
+  const [state, setState] = useState<"loading" | "allowed" | "denied" | "unconfigured">("loading");
 
   useEffect(() => {
     const consoleSpaceId = sdk.parameters.installation?.consoleSpaceId;
-    if (!consoleSpaceId) { setState("denied"); return; }
+    if (!consoleSpaceId) { setState("unconfigured"); return; }
     api.me(sdk, { orgId: sdk.ids.organization, consoleSpaceId })
       .then((r: any) => setState(r.isOrgAdmin ? "allowed" : "denied"))
       .catch(() => setState("denied"));
   }, []);
 
   if (state === "loading") return <Spinner />;
-  if (state === "denied") return <Restricted />;
+  if (state === "unconfigured") return <Restricted reason="unconfigured" />;
+  if (state === "denied") return <Restricted reason="not-admin" />;
 
   const isConsole = sdk.ids.space === sdk.parameters.installation?.consoleSpaceId;
   return isConsole ? <PageConsole sdk={sdk} /> : <PageFrozen sdk={sdk} />;

@@ -1,23 +1,12 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Stack, Button, Note } from "@contentful/f36-components";
 import type { WizardState } from "../locations/app-config";
 
-export function StepReview({ sdk, state, onBack }:
+export function StepReview({ state, onBack }:
   { sdk: any; state: WizardState; onNext: () => void; onBack: () => void }) {
-  // Register onConfigure so that when the user clicks Contentful's native
-  // "Save" button (top-right of the iframe), the wizard's collected state is
-  // persisted as installation parameters. After Save, the app is installed
-  // and the governance console (Page location) handles the actual bootstrap.
-  useEffect(() => {
-    sdk.app?.onConfigure?.(() => ({
-      parameters: {
-        orgAdminsTeamName: state.orgAdminsTeamName,
-        initialMembers: state.initialMembers,
-        consoleSpaceId: state.consoleSpaceId
-      }
-    }));
-  }, [sdk, state]);
-
+  // onConfigure is registered at the AppConfig level so the parameters
+  // callback is always set, even if the user clicks Save before reaching
+  // this step.
   return (
     <Stack flexDirection="column" spacing="spacingM">
       <table>
