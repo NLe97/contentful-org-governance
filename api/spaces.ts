@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
 import { cmaForSpace } from "../lib/cma/client.js";
+import { validateConsoleSpace, ConsoleSpaceMismatchError } from "../lib/auth/validate-console-space.js";
 
 // List spaces in the caller's org. App-SDK `sdk.cma.space.getMany` is
 // not available from within an app installation, so the console UI calls
@@ -19,6 +20,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const orgId = String(req.query.orgId ?? "");
   const consoleSpaceId = String(req.query.consoleSpaceId ?? "");
   if (!orgId || !consoleSpaceId) return res.status(400).json({ error: "missing query" });
+  try { validateConsoleSpace(consoleSpaceId); }
+  catch (e) {
+    if (e instanceof ConsoleSpaceMismatchError) return res.status(403).json({ error: e.message });
+    throw e;
+  }
 
   // cmaForSpace returns the ClientAPI union; cast for chaining.
   const cma = (await cmaForSpace(orgId, consoleSpaceId)) as any;

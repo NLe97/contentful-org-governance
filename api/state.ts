@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
 import { cmaForSpace } from "../lib/cma/client.js";
 import { readSpaceState } from "../lib/content-model/space-state.js";
+import { validateConsoleSpace, ConsoleSpaceMismatchError } from "../lib/auth/validate-console-space.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -16,6 +17,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const orgId = String(req.query.orgId ?? "");
   const consoleSpaceId = String(req.query.consoleSpaceId ?? "");
   if (!spaceId || !orgId || !consoleSpaceId) return res.status(400).json({ error: "missing query" });
+  try { validateConsoleSpace(consoleSpaceId); }
+  catch (e) {
+    if (e instanceof ConsoleSpaceMismatchError) return res.status(403).json({ error: e.message });
+    throw e;
+  }
 
   // NOTE: cmaForSpace() returns a union `ClientAPI` where `getSpace` only exists
   // on the non-plain variant; we always construct the non-plain client, so cast

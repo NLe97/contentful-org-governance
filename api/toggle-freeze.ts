@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
 import { readRawBody } from "../lib/auth/raw-body.js";
+import { validateConsoleSpace, ConsoleSpaceMismatchError } from "../lib/auth/validate-console-space.js";
 
 // See bootstrap.ts: disable body parser so signed-request verification can
 // use the exact bytes Contentful hashed.
@@ -44,6 +45,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   catch { return res.status(400).json({ error: "invalid json body" }); }
   if (!body.spaceId || !body.action || !body.orgId || !body.consoleSpaceId) {
     return res.status(400).json({ error: "missing fields" });
+  }
+  try { validateConsoleSpace(body.consoleSpaceId); }
+  catch (e) {
+    if (e instanceof ConsoleSpaceMismatchError) return res.status(403).json({ error: e.message });
+    throw e;
   }
   if (body.spaceId === body.consoleSpaceId) {
     return res.status(422).json({ error: "cannot freeze console space" });

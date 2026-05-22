@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyAppSignature } from "../lib/auth/verify-app-signature.js";
 import { cmaForSpace } from "../lib/cma/client.js";
 import { checkOrgAdmin } from "../lib/auth/check-org-admin.js";
+import { validateConsoleSpace, ConsoleSpaceMismatchError } from "../lib/auth/validate-console-space.js";
 
 // Returns the calling user's identity + whether they are an Org Admin/Owner.
 // The frontend gates the entire console on this so non-admins see a clean
@@ -20,6 +21,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const orgId = String(req.query.orgId ?? "");
   const consoleSpaceId = String(req.query.consoleSpaceId ?? "");
   if (!orgId || !consoleSpaceId) return res.status(400).json({ error: "missing query: orgId, consoleSpaceId" });
+  try { validateConsoleSpace(consoleSpaceId); }
+  catch (e) {
+    if (e instanceof ConsoleSpaceMismatchError) return res.status(403).json({ error: e.message });
+    throw e;
+  }
 
   let isOrgAdmin = false;
   try {

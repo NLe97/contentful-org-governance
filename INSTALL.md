@@ -108,6 +108,15 @@ or reuse an existing admin space.
    - Sweep your org and attach the team as admin to every other space.
 5. After the wizard finishes you'll see **Setup complete** → tabs for
    **Spaces** and **Audit log**.
+6. **Pin the console space ID.** Copy the URL of the console space from your
+   browser bar — it looks like `https://app.contentful.com/spaces/<spaceId>/...`.
+   In Vercel → project Settings → Environment Variables, add:
+   - `CONSOLE_SPACE_ID` = `<spaceId>` (the ID from the URL)
+
+   Then **Deployments → Redeploy**. This pins server-side validation so the
+   backend rejects any request that claims a different console space. Without
+   this, a Space Admin who installs the app in a second space could trick the
+   backend into writing state to the wrong space.
 
 ## Step 6 — Validate
 
