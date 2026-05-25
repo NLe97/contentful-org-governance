@@ -28,6 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   let isOrgAdmin = false;
+  let detail: string | undefined;
   try {
     // NOTE: cmaForSpace() returns a union ClientAPI; getOrganization only
     // exists on the non-plain variant (matches the cast in other endpoints).
@@ -35,9 +36,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const org = await cma.getOrganization(orgId);
     await checkOrgAdmin(org, id.userId);
     isOrgAdmin = true;
-  } catch {
-    isOrgAdmin = false;
+  } catch (e) {
+    // Previously this catch was naked and swallowed every failure as
+    // "not admin," which made it impossible to tell apart real
+    // not-org-admin users from misconfigured deploys (wrong PAT, PAT
+    // without access to this org, network errors, etc). Keep the 200
+    // response so the frontend gate still works, but surface the
+    // underlying message in `detail` so it's visible in DevTools and
+    // Vercel logs.
+    detail = (e as Error).message;
+    console.error("[/api/me] org-admin check failed", { orgId, userId: id.userId, detail });
   }
 
-  return res.status(200).json({ userId: id.userId, isOrgAdmin });
+  return res.status(200).json(
+    isOrgAdmin ? { userId: id.userId, isOrgAdmin } : { userId: id.userId, isOrgAdmin, detail }
+  );
 }
