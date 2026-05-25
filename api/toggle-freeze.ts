@@ -17,6 +17,7 @@ import { ensureFrozenRole } from "../lib/freeze/ensure-frozen-role.js";
 import { enumerateSpaceAdmins } from "../lib/freeze/enumerate-admins.js";
 import { substituteMembership, restoreMembership } from "../lib/freeze/substitute.js";
 import { enumerateAdminTeams, detachTeam, reattachTeam } from "../lib/freeze/team-admins.js";
+import { verifyProtectedTeamPurity } from "../lib/auth/verify-protected-team.js";
 
 async function consoleEnvFor(orgId: string, consoleSpaceId: string) {
   // NOTE: cmaForSpace() returns a union `ClientAPI` where `getSpace` only
@@ -73,6 +74,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const t = nextStatus(curStatus, body.action);
   if (!t.ok) return res.status(409).json({ error: t.reason });
+
+  // Safety check: refuse to freeze if the protected Org Admins team has
+  // members who are not org-level admins/owners — they'd bypass the
+  // freeze via team-attached admin and undermine the whole point.
+  // Only enforced on freeze (not thaw or idempotent no-ops).
+  const protectedTeamId = config?.fields.orgAdminsTeamId?.["en-US"] as string | undefined;
+  if (body.action === "freeze" && !t.idempotent && protectedTeamId) {
+    const purity = await verifyProtectedTeamPurity(adminOrg, protectedTeamId);
+    if (!purity.ok) {
+      return res.status(409).json({
+        error: "Protected Org Admins team contains non-admin members; freeze would leak.",
+        nonAdminUserIds: purity.nonAdminUserIds,
+        remediation: `Remove these users from team '${protectedTeamId}' (or promote them to Org Admin/Owner) and retry.`
+      });
+    }
+  }
+
   const jobId = `freeze-${Date.now()}-${body.spaceId.slice(0, 4)}`;
   await upsertSpaceState(env, {
     spaceId: body.spaceId,
