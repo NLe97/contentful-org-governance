@@ -16,6 +16,7 @@ import { runTransition } from "../lib/freeze/run-transition.js";
 import { ensureFrozenRole } from "../lib/freeze/ensure-frozen-role.js";
 import { enumerateSpaceAdmins } from "../lib/freeze/enumerate-admins.js";
 import { substituteMembership, restoreMembership } from "../lib/freeze/substitute.js";
+import { enumerateAdminTeams, detachTeam, reattachTeam } from "../lib/freeze/team-admins.js";
 
 async function consoleEnvFor(orgId: string, consoleSpaceId: string) {
   // NOTE: cmaForSpace() returns a union `ClientAPI` where `getSpace` only
@@ -103,7 +104,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     restore: restoreMembership,
     writeState: async (patch) => { await upsertSpaceState(env, { spaceId: body.spaceId!, ...patch } as any); },
     audit: async (ev) => { await appendAudit(env, { eventType: ev.eventType as any, spaceId: body.spaceId!, actorUserId: "system", details: ev.details }); },
-    priorSubstitutions: stateEntry?.fields.substitutions?.["en-US"] ?? {}
+    priorSubstitutions: stateEntry?.fields.substitutions?.["en-US"] ?? {},
+    org: adminOrg,
+    protectedTeamId: config?.fields.orgAdminsTeamId?.["en-US"],
+    enumerateAdminTeams,
+    detachTeam,
+    reattachTeam
   });
 
   // Re-read final state so the response reflects FROZEN / OFF / DEGRADED.
