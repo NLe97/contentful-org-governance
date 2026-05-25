@@ -1,10 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { verifyAppSignature } from "@/lib/auth/verify-app-signature";
 
+// Capture the secret each call sees so we can assert colon-stripping.
+const capturedSecrets: string[] = [];
 vi.mock("@contentful/node-apps-toolkit", () => ({
-  verifyRequest: vi.fn((_pk: string, req: any) =>
-    req.headers["x-contentful-signature"] === "valid"
-  )
+  verifyRequest: vi.fn((secret: string, req: any) => {
+    capturedSecrets.push(secret);
+    return req.headers["x-contentful-signature"] === "valid";
+  })
 }));
 
 describe("verifyAppSignature", () => {
@@ -39,5 +42,22 @@ describe("verifyAppSignature", () => {
   it("throws on stale timestamp (> 30s old)", () => {
     const stale = { ...baseReq, headers: { ...baseReq.headers, "x-contentful-timestamp": String(Date.now() - 60_000) } };
     expect(() => verifyAppSignature(stale, "private-key-pem")).toThrow(/timestamp/i);
+  });
+
+  it("strips colons from a UI-formatted secret before HMAC", () => {
+    capturedSecrets.length = 0;
+    const withColons = "38:7e:86:a7:36:7c:6b:26";
+    verifyAppSignature(baseReq, withColons);
+    expect(capturedSecrets[capturedSecrets.length - 1]).toBe("387e86a7367c6b26");
+  });
+
+  it("throws an actionable message when secret missing", () => {
+    const old = process.env.APP_SIGNING_SECRET;
+    delete process.env.APP_SIGNING_SECRET;
+    try {
+      expect(() => verifyAppSignature(baseReq)).toThrow(/APP_SIGNING_SECRET not configured/);
+    } finally {
+      if (old !== undefined) process.env.APP_SIGNING_SECRET = old;
+    }
   });
 });

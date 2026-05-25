@@ -15,8 +15,8 @@ async function loadInstallations(): Promise<Installation[]> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  try { verifyCronToken(req.headers.authorization as string); }
-  catch { return res.status(401).json({ error: "invalid cron auth" }); }
+  try { verifyCronToken(req); }
+  catch (e) { return res.status(401).json({ error: (e as Error).message }); }
 
   const installations = await loadInstallations();
   const out: any[] = [];
