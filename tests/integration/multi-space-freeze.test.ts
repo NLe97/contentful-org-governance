@@ -6,6 +6,7 @@ import { enumerateSpaceAdmins } from "@/lib/freeze/enumerate-admins";
 import { substituteMembership, restoreMembership } from "@/lib/freeze/substitute";
 import { enumerateAdminTeams, detachTeam, reattachTeam } from "@/lib/freeze/team-admins";
 import { runTransition, TEAM_KEY_PREFIX } from "@/lib/freeze/run-transition";
+import { readConfig } from "@/lib/content-model/governance-config";
 
 // Stress check: drive the same code paths /api/toggle-freeze uses to
 // freeze TWO scratch spaces concurrently, then thaw both, verifying
@@ -26,12 +27,27 @@ const RUN = process.env.CF_INTEGRATION === "1";
 const PAT = process.env.CF_DEV_PAT!;
 const ORG = process.env.CF_TARGET_ORG ?? "30SScScam27l3EU95xxctv";
 const ACTOR = process.env.CF_ACTOR_USER_ID ?? "stress-test-actor";
+// Where this test reads the protected team ID from. Either explicit env
+// override, or fall back to the live governanceConfig in the console
+// space (mirrors what api/toggle-freeze does in production).
+const CONSOLE_SPACE = process.env.CF_CONSOLE_SPACE_ID;
 
 describe.runIf(RUN)("integration — multi-space freeze stress", () => {
   let cma: any;
+  let protectedTeamId: string | undefined;
   const created: { id: string }[] = [];
 
-  beforeAll(() => { cma = createClient({ accessToken: PAT }); });
+  beforeAll(async () => {
+    cma = createClient({ accessToken: PAT });
+    protectedTeamId = process.env.CF_PROTECTED_TEAM_ID;
+    if (!protectedTeamId && CONSOLE_SPACE) {
+      try {
+        const env = await (await cma.getSpace(CONSOLE_SPACE)).getEnvironment("master");
+        const cfg = await readConfig(env as any);
+        protectedTeamId = cfg?.fields?.orgAdminsTeamId?.["en-US"];
+      } catch { /* fall through — test will surface a useful error if the team isn't actually protected */ }
+    }
+  });
 
   afterAll(async () => {
     for (const s of created) {
@@ -74,7 +90,7 @@ describe.runIf(RUN)("integration — multi-space freeze stress", () => {
         space: spaceA, org,
         enumerate: enumerateSpaceAdmins, ensureRole: ensureFrozenRole,
         substitute: substituteMembership, restore: restoreMembership,
-        enumerateAdminTeams, detachTeam, reattachTeam,
+        enumerateAdminTeams, detachTeam, reattachTeam, protectedTeamId,
         writeState: stA.writeState, audit: stA.audit
       }),
       runTransition("freeze", {
@@ -82,11 +98,15 @@ describe.runIf(RUN)("integration — multi-space freeze stress", () => {
         space: spaceB, org,
         enumerate: enumerateSpaceAdmins, ensureRole: ensureFrozenRole,
         substitute: substituteMembership, restore: restoreMembership,
-        enumerateAdminTeams, detachTeam, reattachTeam,
+        enumerateAdminTeams, detachTeam, reattachTeam, protectedTeamId,
         writeState: stB.writeState, audit: stB.audit
       })
     ]);
 
+    if (stA.state.freezeStatus !== "FROZEN" || stB.state.freezeStatus !== "FROZEN") {
+      console.error("FREEZE A:", JSON.stringify({ state: stA.state, audits: stA.audits }, null, 2));
+      console.error("FREEZE B:", JSON.stringify({ state: stB.state, audits: stB.audits }, null, 2));
+    }
     expect(stA.state.freezeStatus).toBe("FROZEN");
     expect(stB.state.freezeStatus).toBe("FROZEN");
     expect(stA.state.customFrozenRoleId).toBeTruthy();
