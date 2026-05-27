@@ -393,7 +393,7 @@ Failure path: a failing automated pre-flight check stops the wizard with a clear
 For `30SScScam27l3EU95xxctv`:
 - Org has only one space (`ubgf1y7ixw5q` — "Jobs"). Create at least one additional empty space during dev to demonstrate fan-out.
 - Invite a throwaway Contentful user to be the manual-probe subject for P1 and P2.
-- During local dev, use the working PAT (`CFPAT-E_r2xN…`) against the org. Rotate after the build is complete. Production paths use App Identity.
+- During local dev, use a dev PAT (kept in `.env`, never committed) against the org. Rotate after the build is complete. Production paths use App Identity.
 
 ## 14. Open questions / known unknowns
 
@@ -405,7 +405,7 @@ For `30SScScam27l3EU95xxctv`:
 
 ## 15. Out-of-band references
 
-- Verified PAT (dev only, rotate post-build): `CFPAT-E_r2xN…` — owner `ben.le@contentful.com`.
+- Dev PAT (kept in `.env`, never committed; rotate post-build).
 - Target org: `30SScScam27l3EU95xxctv` ("Ben Simple Projects").
 - Demo space: `ubgf1y7ixw5q` ("Jobs").
 - Auto-memory: `~/.claude/projects/-Users-benle-Desktop/memory/project_contentful_role_guard_app.md`.
