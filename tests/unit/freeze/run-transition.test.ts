@@ -98,4 +98,37 @@ describe("runTransition (freeze)", () => {
     expect(final.freezeStatus).toBe("DEGRADED");
     expect(audit).toHaveBeenCalledWith(expect.objectContaining({ eventType: "ERROR" }));
   });
+
+  it("thaw restores the correct user even when CMA ignores the sys.user.sys.id filter", async () => {
+    // Reproduces the live bug: getSpaceMemberships returns ALL memberships
+    // regardless of the filter argument. findMembershipByUser must match
+    // by user id in JS — using items[0] would restore the wrong user.
+    const allMemberships = [
+      { sys: { id: "m-other", user: { sys: { id: "userOther" } } } },
+      { sys: { id: "m-target", user: { sys: { id: "userTarget" } } } }
+    ];
+    const space = {
+      // CMA ignores the filter; returns the full list every time.
+      getSpaceMemberships: vi.fn(async () => ({ items: allMemberships }))
+    } as any;
+    const restore = vi.fn().mockResolvedValue(undefined);
+    const writeState = vi.fn();
+    const audit = vi.fn();
+
+    await runTransition("thaw", {
+      spaceId: "sX", actorUserId: "uActor", frozenRoleName: "FR",
+      space,
+      enumerate: vi.fn(), ensureRole: vi.fn(), substitute: vi.fn(), restore,
+      writeState, audit,
+      priorSubstitutions: {
+        userTarget: { originalRoleId: "admin-builtin", substitutedRoleId: "rFrozen" }
+      } as any
+    });
+
+    expect(restore).toHaveBeenCalledTimes(1);
+    // Must be the target user's membershipId, not items[0]'s.
+    expect(restore.mock.calls[0]![1]).toBe("m-target");
+    const final = writeState.mock.calls.at(-1)![0];
+    expect(final.freezeStatus).toBe("OFF");
+  });
 });

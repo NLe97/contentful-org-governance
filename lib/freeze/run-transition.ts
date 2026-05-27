@@ -118,8 +118,23 @@ export async function runTransition(action: Action, d: RunDeps): Promise<void> {
   }
 }
 
+// CMA v11 silently ignores the `sys.user.sys.id` filter on
+// /spaces/{id}/space_memberships — same behavior we documented for
+// /organization_memberships in lib/auth/check-org-admin.ts. Sending
+// the filter returns the full list anyway. Using `items[0]` would
+// land on an arbitrary membership and "restore" the wrong user —
+// leaving the actual target stuck on the frozen role while
+// spaceState reports OFF. Paginate and match in JS instead.
+// PAGE_SIZE * MAX_PAGES = 500 admins per space; bump if needed.
+const FIND_PAGE_SIZE = 100;
+const FIND_MAX_PAGES = 5;
 async function findMembershipByUser(space: any, userId: string): Promise<string | undefined> {
   if (!space.getSpaceMemberships) return undefined;
-  const r = await space.getSpaceMemberships({ "sys.user.sys.id": userId });
-  return r.items[0]?.sys.id;
+  for (let skip = 0; skip < FIND_PAGE_SIZE * FIND_MAX_PAGES; skip += FIND_PAGE_SIZE) {
+    const r = await space.getSpaceMemberships({ limit: FIND_PAGE_SIZE, skip });
+    const m = r.items.find((mm: any) => mm.sys.user?.sys?.id === userId);
+    if (m) return m.sys.id;
+    if (r.items.length < FIND_PAGE_SIZE) break;
+  }
+  return undefined;
 }
