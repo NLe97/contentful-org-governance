@@ -1,6 +1,6 @@
 # Contentful Org Governance App Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Implementation plan executed task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking progress.
 
 **Goal:** Ship a multi-tenant Contentful App that protects org admins via an auto-attached Team (MVP 1) and freezes role/permission edits per space via role substitution (MVP 2). State in Contentful, compute on Vercel.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Node 20, Vercel Functions, React 18 + Vite, `@contentful/app-sdk`, `@contentful/f36-components`, `contentful-management`, `@contentful/node-apps-toolkit`, Vitest, pnpm.
 
-**Spec:** `docs/superpowers/specs/2026-05-16-contentful-org-governance-app-design.md`.
+**Spec:** `docs/design/specs/2026-05-16-contentful-org-governance-app-design.md`.
 
 **Pre-baked context for every task:**
 - Working directory: `/Users/benle/Desktop/test app`
@@ -3209,7 +3209,7 @@ Production-ready Contentful App delivering:
 5. Deploy to Vercel; create the Contentful App Definition pointing at the deployed frontend bundle + `/api/*` endpoints.
 6. Install in the target org and run the bootstrap wizard.
 
-See `docs/superpowers/specs/2026-05-16-contentful-org-governance-app-design.md` for the spec and `docs/superpowers/plans/2026-05-16-contentful-org-governance-app.md` for this plan.
+See `docs/design/specs/2026-05-16-contentful-org-governance-app-design.md` for the spec and `docs/design/plans/2026-05-16-contentful-org-governance-app.md` for this plan.
 ```
 
 - [ ] **Step 5: Commit**

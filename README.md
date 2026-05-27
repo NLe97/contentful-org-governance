@@ -43,7 +43,7 @@ Contentful UI (iframe)  <-->  Vercel /api/*  <--PAT-->  Contentful Mgmt API
 - `app/` — React frontend (Vite build) with the wizard, console, audit log
 - `scripts/` — Setup + QA scripts (`setup:app-definition`, `qa:state`,
   `qa:freeze-thaw`, probes)
-- `docs/superpowers/` — Design spec + implementation plan
+- `docs/design/` — Design spec + implementation plan
 
 ## Development
 
@@ -66,5 +66,5 @@ header for required env).
   editing, not against rogue admins.
 - Not multi-tenant SaaS. Each customer self-hosts on their own Vercel.
 
-See `docs/superpowers/specs/2026-05-16-contentful-org-governance-app-design.md`
+See `docs/design/specs/2026-05-16-contentful-org-governance-app-design.md`
 for the full design spec.
