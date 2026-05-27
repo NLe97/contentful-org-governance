@@ -19,9 +19,11 @@ const PLAN: Array<[string, unknown]> = [
 
 export async function ensureContentTypes(env: Env): Promise<void> {
   const existing = new Set((await env.getContentTypes()).items.map((c) => c.sys.id));
-  for (const [id, schema] of PLAN) {
-    if (existing.has(id)) continue;
+  const missing = PLAN.filter(([id]) => !existing.has(id));
+  if (missing.length === 0) return;
+  // Each content type's create + publish is independent — parallelize.
+  await Promise.all(missing.map(async ([id, schema]) => {
     const created = await env.createContentTypeWithId(id, schema);
     await created.publish();
-  }
+  }));
 }

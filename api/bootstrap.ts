@@ -8,7 +8,7 @@ export const config = { api: { bodyParser: false } };
 import { checkOrgAdmin } from "../lib/auth/check-org-admin.js";
 import { cmaForSpace } from "../lib/cma/client.js";
 import { ensureContentTypes } from "../lib/content-model/ensure-types.js";
-import { writeConfig } from "../lib/content-model/governance-config.js";
+import { writeConfig, readConfig } from "../lib/content-model/governance-config.js";
 import { appendAudit } from "../lib/content-model/audit-event.js";
 import { sweep } from "../lib/fanout/sweep.js";
 import { ensureTeamAttached } from "../lib/fanout/ensure-team-attached.js";
@@ -26,21 +26,22 @@ async function ensureTeam(org: any, name: string, members: string[]): Promise<st
   const existing = (await org.getTeams()).items.find((t: any) => t.name === name);
   const team = existing ?? await org.createTeam({ name, description: "Auto-managed by Org Governance App" } as any);
 
-  // v11's createTeamMembership requires `organizationMembershipId`, not a raw
-  // user id. Look those up for the members we want to add.
-  const orgMemberships = (await org.getOrganizationMemberships()).items;
-  const userIdToOrgMembershipId = new Map<string, string>(
-    orgMemberships.map((m: any) => [m.sys.user?.sys.id, m.sys.id])
-  );
+  // No members requested? Skip the two extra list calls. Common case for
+  // re-runs of bootstrap where the team already has its members.
+  if (members.length === 0) return team.sys.id;
 
-  // Existing team-membership rows for this team (so we don't double-add).
-  let existingTeamMemberUserIds = new Set<string>();
-  try {
-    const tmList = await org.getTeamMemberships({ teamId: team.sys.id });
-    existingTeamMemberUserIds = new Set(
-      tmList.items.map((m: any) => m.sys.user?.sys.id).filter(Boolean)
-    );
-  } catch { /* if listing fails, attempt the create anyway; create is idempotent server-side */ }
+  // v11's createTeamMembership requires `organizationMembershipId`, not a raw
+  // user id. Fetch the lookups we need in parallel.
+  const [orgMembershipsRes, tmListRes] = await Promise.all([
+    org.getOrganizationMemberships(),
+    org.getTeamMemberships({ teamId: team.sys.id }).catch(() => ({ items: [] as any[] }))
+  ]);
+  const userIdToOrgMembershipId = new Map<string, string>(
+    orgMembershipsRes.items.map((m: any) => [m.sys.user?.sys.id, m.sys.id])
+  );
+  const existingTeamMemberUserIds = new Set(
+    tmListRes.items.map((m: any) => m.sys.user?.sys.id).filter(Boolean)
+  );
 
   for (const userId of members) {
     if (existingTeamMemberUserIds.has(userId)) continue;
@@ -91,15 +92,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // only exist on the non-plain variant; we always construct the non-plain client,
   // so cast to `any` here (matches scripts/probe-*.ts and api/toggle-freeze.ts).
   const cma = (await cmaForSpace(b.orgId, b.consoleSpaceId)) as any;
-  const space = await cma.getSpace(b.consoleSpaceId);
+  // Fetch space + org in parallel — they're independent.
+  const [space, org] = await Promise.all([cma.getSpace(b.consoleSpaceId), cma.getOrganization(b.orgId)]);
   const env = await space.getEnvironment("master");
-  const org = await cma.getOrganization(b.orgId);
 
   try {
     await checkOrgAdmin(org as any, identity.userId);
   } catch (e) {
     return res.status(403).json({ error: (e as Error).message });
   }
+
+  // Fast path: if content types exist and governanceConfig is already
+  // populated with an orgAdminsTeamId, bootstrap has run successfully
+  // before. Skip the heavy work and return immediately. The cron handles
+  // ongoing reconcile.
+  try {
+    const existingConfig = await readConfig(env);
+    const existingTeamId = existingConfig?.fields?.orgAdminsTeamId?.["en-US"] as string | undefined;
+    if (existingTeamId) {
+      return res.status(200).json({ ok: true, alreadyBootstrapped: true, orgAdminsTeamId: existingTeamId });
+    }
+  } catch { /* content types may not exist yet — fall through to full bootstrap */ }
 
   await ensureContentTypes(env as any);
 
@@ -123,7 +136,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     webhookIds = [wh1, wh2];
   }
 
-  const swept = await sweep(cma as any, b.orgId, teamId, b.consoleSpaceId);
+  // Pass the already-fetched `org` handle to avoid a duplicate getOrganization
+  // inside sweep().
+  const swept = await sweep(cma as any, b.orgId, teamId, b.consoleSpaceId, undefined, org as any);
   await appendAudit(env, { eventType: "RECONCILE_RUN", actorUserId: "system", details: { phase: "bootstrap", swept } });
 
   return res.status(200).json({ ok: true, orgAdminsTeamId: teamId, swept, webhookIds });
