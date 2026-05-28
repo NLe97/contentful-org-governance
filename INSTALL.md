@@ -113,6 +113,33 @@ In your Vercel project → **Settings** → **Environment Variables**, add:
 | `CRON_SECRET` | any 32-byte random hex string | guards `/api/cron/reconcile`. Generate with `openssl rand -hex 32` |
 | `GLOBAL_WEBHOOK_SECRET` | any 32-byte random hex string | derive per-installation webhook secrets from this. Optional today (webhook subsystem is dormant), but recommended so future versions don't surprise you. Generate with `openssl rand -hex 32` |
 
+### How to make `CRON_SECRET` and `GLOBAL_WEBHOOK_SECRET`
+
+Unlike the App Signing Secret, neither of these is registered with Contentful
+— they're plain random hex values you mint locally and store in Vercel only.
+Generate one of each:
+
+```sh
+openssl rand -hex 32   # → paste as CRON_SECRET
+openssl rand -hex 32   # → paste as GLOBAL_WEBHOOK_SECRET
+```
+
+What each protects:
+
+- **`CRON_SECRET`** — bearer token guarding `/api/cron/reconcile`
+  (`lib/auth/verify-cron-token.ts`). Vercel's own cron is allowed through the
+  `x-vercel-cron` header automatically; the secret is what gates *manual*
+  calls (e.g. the rotation example in *Maintenance* below). Load-bearing if
+  you ever hit that endpoint from outside Vercel.
+- **`GLOBAL_WEBHOOK_SECRET`** — HMAC root from which per-installation webhook
+  secrets are derived as `HMAC-SHA256(GLOBAL_WEBHOOK_SECRET, installationId)`
+  (`lib/secrets/derive-webhook-secret.ts`). The derived value — not the root —
+  is what's stored on each Contentful webhook. **Optional today**: the
+  current build does not actively register webhooks during bootstrap, so this
+  value is dormant. Set it anyway so a future release doesn't surprise you.
+  Rotation = change the env var and re-bootstrap (re-registers all webhooks
+  with freshly derived secrets).
+
 Apply to **Production** environment. Then **Deployments → Redeploy** the
 latest with "Use existing build cache: off."
 
