@@ -76,6 +76,31 @@ Generated App Signing Secret (store as APP_SIGNING_SECRET in Vercel):
 
 Copy both.
 
+### What the signing secret is (and how it's made)
+
+The **App Signing Secret** is a random 64-byte hex value the script mints
+locally and registers against your App Definition via
+`PUT /organizations/{org}/app_definitions/{defId}/signing_secret`. Contentful
+then HMAC-signs every iframe request to your app with it; `APP_SIGNING_SECRET`
+in Vercel is what the app uses to verify those signatures. It is **not** the
+App private key (that's a separate thing, used for App Identity tokens).
+
+You don't have to use the script. The equivalent manual path is:
+
+> **Org Settings → Apps → Org Governance → App signing secret → Generate**
+
+⚠️ Two gotchas, both of which will surface as `403 Invalid signature`:
+
+- **Colon format.** The UI shows the secret as colon-delimited hex
+  (`38:7e:86:…`). The real key is the raw hex with no colons. The app strips
+  colons for you, so copy-paste either form — but if you store it somewhere
+  else, store the raw value.
+- **Regenerating invalidates the old one.** Clicking *Generate* (or re-running
+  the PUT) mints a fresh secret and revokes the previous value. Whenever you
+  regenerate, you **must** update `APP_SIGNING_SECRET` in Vercel and redeploy,
+  or every request from Contentful will fail to verify. (Rotation steps are in
+  the *Maintenance* section below.)
+
 ## Step 4 — Set Vercel env vars + redeploy
 
 In your Vercel project → **Settings** → **Environment Variables**, add:
